@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>보증서 발송 · 관리자 | ARK PROJECT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#1A3620; --gold:#D4AF37; --gold-soft:#E8D9A0; --paper:#FBF8F0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:linear-gradient(160deg,#1A3620,#0E1F12); color:var(--paper); min-height:100vh; padding:30px 16px; }
+    .wrap { max-width:520px; margin:0 auto; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+    .logo { font-family:'Playfair Display',serif; color:var(--gold); letter-spacing:3px; font-size:15px; }
+    .nav a, .logout { color:var(--gold-soft); font-size:12px; text-decoration:none; background:none; border:1px solid rgba(212,175,55,0.4); padding:6px 12px; border-radius:6px; cursor:pointer; margin-left:6px; }
+    .nav a.active { background:var(--gold); color:#10220f; border-color:var(--gold); }
+    .panel { background:rgba(0,0,0,0.25); border:1px solid rgba(212,175,55,0.3); border-radius:14px; padding:26px; }
+    h1 { font-size:18px; font-weight:500; margin-bottom:6px; }
+    .sub { font-size:13px; color:var(--gold-soft); opacity:0.8; margin-bottom:22px; }
+    label { display:block; font-size:13px; color:var(--gold-soft); margin:14px 0 6px; }
+    input { width:100%; padding:13px 14px; border-radius:8px; border:1px solid rgba(212,175,55,0.35); background:rgba(255,255,255,0.06); color:#fff; font-size:15px; }
+    input:focus { outline:none; border-color:var(--gold); }
+    .hint { font-size:11px; color:var(--gold-soft); opacity:0.6; margin-top:4px; }
+    button.send { width:100%; margin-top:24px; padding:15px; border:none; border-radius:8px; background:linear-gradient(180deg,#E6C75A,#D4AF37); color:#0E1F12; font-size:16px; font-weight:700; cursor:pointer; letter-spacing:1px; }
+    .alert { padding:13px 15px; border-radius:8px; font-size:14px; margin-bottom:18px; }
+    .err { background:rgba(180,40,40,0.25); border:1px solid rgba(220,80,80,0.5); color:#ffd9d9; }
+    .ok { background:rgba(40,120,60,0.25); border:1px solid rgba(120,200,140,0.5); color:#d6ffe0; }
+    .ok a { color:var(--gold); word-break:break-all; }
+    .result-row { font-size:13px; margin:4px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo">ARK PROJECT · 관리자</div>
+      <div class="nav">
+        <a href="/admin/new">개체 등록</a>
+        <a href="/admin" class="active">보증서 발송</a>
+        <form method="POST" action="/admin/logout" style="display:inline"><button class="logout" type="submit">로그아웃</button></form>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h1>보증서 발송</h1>
+      <div class="sub">제품(고유)번호와 고객 휴대폰 번호를 입력하면, 보증서 링크가 자동으로 발송됩니다.</div>
+
+      <% if (error) { %>
+        <div class="alert err">⚠️ <%= error %></div>
+      <% } %>
+
+      <% if (result) { %>
+        <div class="alert ok">
+          ✅ <strong><%= result.channel %></strong>(으)로 발송 완료!
+          <div class="result-row">고유번호: <%= result.id %> <%= result.variety ? '· ' + result.variety : '' %></div>
+          <div class="result-row">받는 사람: <%= result.phone %></div>
+          <div class="result-row">보증서 링크: <a href="<%= result.url %>" target="_blank"><%= result.url %></a></div>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/admin/send">
+        <label>제품(고유)번호 *</label>
+        <input name="id" placeholder="예: HW-2026-0001" value="<%= form.id || '' %>" required />
+        <div class="hint">구글 시트의 '고유번호' 열과 일치해야 합니다.</div>
+
+        <label>고객 이름 (선택)</label>
+        <input name="name" placeholder="예: 홍길동" value="<%= form.name || '' %>" />
+        <div class="hint">입력하면 시트의 '소유자'에 자동 기록됩니다.</div>
+
+        <label>고객 휴대폰 번호 *</label>
+        <input name="phone" placeholder="예: 010-1234-5678" value="<%= form.phone || '' %>" required />
+
+        <button class="send" type="submit">보증서 발송하기</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

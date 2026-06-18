@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 로그인 | ARK PROJECT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:linear-gradient(160deg,#1A3620,#0E1F12); color:#FBF8F0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .box { width:100%; max-width:360px; background:rgba(0,0,0,0.25); border:1px solid rgba(212,175,55,0.3); border-radius:14px; padding:34px 28px; text-align:center; }
+    .logo { font-family:'Playfair Display',serif; color:#D4AF37; letter-spacing:3px; font-size:16px; margin-bottom:6px; }
+    .sub { font-size:12px; color:#E8D9A0; opacity:0.8; margin-bottom:24px; }
+    input { width:100%; padding:13px; border-radius:8px; border:1px solid rgba(212,175,55,0.35); background:rgba(255,255,255,0.06); color:#fff; font-size:15px; text-align:center; }
+    input:focus { outline:none; border-color:#D4AF37; }
+    button { width:100%; margin-top:16px; padding:14px; border:none; border-radius:8px; background:linear-gradient(180deg,#E6C75A,#D4AF37); color:#0E1F12; font-size:15px; font-weight:700; cursor:pointer; }
+    .err { color:#ffb3b3; font-size:13px; margin-top:14px; }
+  </style>
+</head>
+<body>
+  <form class="box" method="POST" action="/admin/login">
+    <div class="logo">ARK PROJECT</div>
+    <div class="sub">BY JIYANG · 관리자 로그인</div>
+    <input type="password" name="password" placeholder="관리자 비밀번호" autofocus required />
+    <button type="submit">로그인</button>
+    <% if (error) { %><div class="err"><%= error %></div><% } %>
+  </form>
+</body>
+</html>
