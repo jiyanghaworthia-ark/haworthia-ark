@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
 
   <style>
-    :root { --green:#1A3620; --green-deep:#0E1F12; --gold:#D4AF37; --gold-soft:#E8D9A0; --paper:#FBF8F0; --ink:#2A2A24; }
+    :root { --green:#1A3620; --green-deep:#0E1F12; --gold:#D4AF37; --gold-soft:#E8D9A0; --paper:#FBF8F0; }
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'Noto Sans KR',sans-serif; background:radial-gradient(circle at 50% 0%, #244A2E 0%, var(--green) 45%, var(--green-deep) 100%); color:var(--paper); min-height:100vh; padding:32px 16px 60px; -webkit-font-smoothing:antialiased; }
     .card { max-width:480px; margin:0 auto; background:linear-gradient(180deg,#1F4129 0%,#16301D 100%); border:1px solid rgba(212,175,55,0.45); border-radius:18px; box-shadow:0 30px 70px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(212,175,55,0.12); overflow:hidden; position:relative; }
@@ -26,12 +26,18 @@
     .brand .by { color:var(--gold-soft); opacity:0.8; }
     .crest { width:42px; height:42px; margin:0 auto 12px; border:1.5px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:20px; }
     .title { font-family:'Playfair Display',serif; font-size:15px; letter-spacing:6px; color:var(--gold-soft); margin-top:10px; text-transform:uppercase; }
-    .photo-wrap { padding:26px 26px 8px; }
+    .grade { display:inline-block; margin-top:14px; padding:5px 16px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+    .grade.royal { background:linear-gradient(180deg,#F0DC8A,#D4AF37); color:#3a2c06; border:1px solid #F0E2A8; box-shadow:0 2px 8px rgba(212,175,55,0.4); }
+    .grade.gold { background:#E8D9A0; color:#3a2c06; }
+    .grade.red { background:#7d2b2b; color:#ffd9d9; }
+    .grade.green { background:#235a3a; color:#cdEFD9; }
+    .photo-wrap { padding:24px 26px 8px; }
     .photo-frame { border:2px solid var(--gold); border-radius:10px; padding:8px; background:rgba(0,0,0,0.25); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
     .photo-frame img { width:100%; display:block; border-radius:6px; aspect-ratio:4/3; object-fit:cover; }
     .photo-placeholder { width:100%; aspect-ratio:4/3; border-radius:6px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); color:var(--gold-soft); font-size:13px; letter-spacing:1px; }
-    .variety { text-align:center; padding:18px 24px 4px; font-family:'Cormorant Garamond','Playfair Display',serif; font-size:30px; font-weight:600; color:#fff; line-height:1.2; }
-    .plant-id { text-align:center; color:var(--gold); letter-spacing:3px; font-size:14px; font-weight:500; padding-bottom:18px; }
+    .variety { text-align:center; padding:18px 24px 2px; font-family:'Cormorant Garamond','Playfair Display',serif; font-size:30px; font-weight:600; color:#fff; line-height:1.2; }
+    .eng { text-align:center; font-family:'Cormorant Garamond',serif; font-style:italic; font-size:17px; color:var(--gold-soft); padding-bottom:6px; }
+    .plant-id { text-align:center; color:var(--gold); letter-spacing:2px; font-size:13.5px; font-weight:500; padding-bottom:18px; word-break:break-all; }
     .info { padding:6px 28px 4px; }
     .row { display:flex; justify-content:space-between; gap:14px; padding:11px 0; border-bottom:1px dashed rgba(212,175,55,0.2); font-size:14px; }
     .row:last-child { border-bottom:none; }
@@ -62,6 +68,16 @@
       <div class="crest">&#10086;</div>
       <div class="brand">ARK PROJECT <span class="by">BY JIYANG</span></div>
       <div class="title">CERTIFICATE OF AUTHENTICITY</div>
+      <%
+        var g = (plant['등급'] || '').trim();
+        var gClass = 'royal', gLabel = 'ROYAL GOLD';
+        if (g.indexOf('로얄') === 0 || g.toUpperCase().indexOf('ROYAL') === 0) { gClass='royal'; gLabel='ROYAL GOLD'; }
+        else if (g.indexOf('골드') === 0 || g.toUpperCase() === 'GOLD') { gClass='gold'; gLabel='GOLD'; }
+        else if (g.indexOf('레드') === 0 || g.toUpperCase() === 'RED') { gClass='red'; gLabel='RED'; }
+        else if (g.indexOf('그린') === 0 || g.toUpperCase() === 'GREEN') { gClass='green'; gLabel='GREEN'; }
+        else if (g) { gClass='royal'; gLabel=g; }
+      %>
+      <div class="grade <%= gClass %>">&#9670; <%= gLabel %> CLASS</div>
     </div>
 
     <div class="photo-wrap">
@@ -75,9 +91,13 @@
     </div>
 
     <div class="variety"><%= plant['품종명'] || '하월시아' %></div>
+    <% if ((plant['영문명']||'').toString().trim()) { %><div class="eng"><%= plant['영문명'] %></div><% } %>
     <div class="plant-id"><%= plant['고유번호'] || '' %></div>
 
     <div class="info">
+      <% if ((plant['종']||'').toString().trim()) { %>
+        <div class="row"><span class="k">종 / 계통</span><span class="v"><%= plant['종'] %></span></div>
+      <% } %>
       <div class="row"><span class="k">육종가</span><span class="v"><%= plant['육종가'] || '지양하월시아' %></span></div>
       <% if ((plant['육종연도']||'').toString().trim()) { %>
         <div class="row"><span class="k">육종 연도</span><span class="v"><%= plant['육종연도'] %></span></div>

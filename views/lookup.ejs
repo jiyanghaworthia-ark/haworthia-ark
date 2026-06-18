@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>방주 프로젝트 · 정품 보증서 조회 | 지양하월시아</title>
+  <meta property="og:title" content="지양하월시아 방주 프로젝트 · 정품 보증서 조회" />
+  <meta property="og:description" content="고유번호를 입력해 정품 디지털 보증서를 확인하세요." />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Cormorant+Garamond:ital@1&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#1A3620; --green-deep:#0E1F12; --gold:#D4AF37; --gold-soft:#E8D9A0; --paper:#FBF8F0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:radial-gradient(circle at 50% 0%, #244A2E 0%, var(--green) 45%, var(--green-deep) 100%); color:var(--paper); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .box { width:100%; max-width:420px; text-align:center; }
+    .crest { width:54px; height:54px; margin:0 auto 16px; border:1.5px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:24px; }
+    .brand { font-family:'Playfair Display',serif; letter-spacing:4px; font-size:15px; color:var(--gold); text-transform:uppercase; }
+    .sub { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:18px; color:var(--gold-soft); margin:8px 0 4px; }
+    .desc { font-size:13px; color:var(--gold-soft); opacity:0.8; margin-bottom:28px; line-height:1.7; }
+    .panel { background:rgba(0,0,0,0.25); border:1px solid rgba(212,175,55,0.35); border-radius:16px; padding:28px 24px; }
+    label { display:block; text-align:left; font-size:13px; color:var(--gold-soft); margin-bottom:8px; }
+    input { width:100%; padding:14px; border-radius:9px; border:1px solid rgba(212,175,55,0.35); background:rgba(255,255,255,0.06); color:#fff; font-size:15px; text-align:center; letter-spacing:1px; }
+    input:focus { outline:none; border-color:var(--gold); }
+    button { width:100%; margin-top:16px; padding:15px; border:none; border-radius:9px; background:linear-gradient(180deg,#E6C75A,#D4AF37); color:#10220f; font-size:16px; font-weight:700; letter-spacing:1px; cursor:pointer; }
+    .err { color:#ffb3b3; font-size:13px; margin-top:14px; }
+    .foot { margin-top:22px; font-size:11px; color:var(--gold-soft); opacity:0.55; line-height:1.7; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="crest">&#10086;</div>
+    <div class="brand">ARK PROJECT BY JIYANG</div>
+    <div class="sub">Certificate of Authenticity</div>
+    <div class="desc">소장하신 하월시아의 <strong>고유번호</strong>를 입력하시면<br/>정품 디지털 보증서를 확인하실 수 있습니다.</div>
+
+    <div class="panel">
+      <form method="POST" action="/find">
+        <label>고유번호</label>
+        <input name="id" placeholder="예: JY-PYG-JY001-26-RG0761" autofocus required />
+        <button type="submit">보증서 확인하기</button>
+        <% if (error) { %><div class="err"><%= error %></div><% } %>
+      </form>
+    </div>
+
+    <div class="foot">
+      지양하월시아 · 방주 프로젝트 관리 대상 품종<br/>
+      본 보증서 시스템은 정품 인증 및 이력 관리를 위한 것입니다.
+    </div>
+  </div>
+</body>
+</html>

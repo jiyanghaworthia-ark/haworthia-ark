@@ -1,13 +1,15 @@
 // =============================================================
-// server.js  —  지양하월시아 방주 프로젝트 디지털 보증서 시스템
-// 주요 경로(URL):
-//   GET  /certificate/:id   → 고객용 디지털 보증서 페이지
-//   GET  /admin             → 관리자 로그인 / 보증서 발송 페이지
-//   GET  /admin/new         → 개체 등록(보증서 발행) 폼
-//   POST /admin/new         → 개체 등록 처리 (구글 시트에 새 행 추가)
-//   POST /admin/login       → 관리자 로그인 처리
-//   POST /admin/send        → 제품번호 입력 → 보증서 링크를 고객에게 알림톡/문자 발송
-//   GET  /healthz           → 서버 상태 확인용
+// server.js — 지양하월시아 방주 프로젝트 디지털 보증서 시스템
+//   GET  /                   → 손님 공개 조회 페이지 (고유번호 입력)
+//   POST /find               → 고유번호로 보증서 페이지 이동
+//   GET  /certificate/:id    → 디지털 보증서 페이지
+//   GET  /admin              → 관리자 로그인 / 보증서 발송
+//   GET  /admin/new          → 개체 등록 폼
+//   POST /admin/new          → 개체 등록 처리
+//   POST /admin/send         → 보증서 링크 발송 (+ 발송내역 기록)
+//   GET  /admin/logs         → 발송내역 보기
+//   POST /admin/logs/add     → 발송내역 수동 추가
+//   POST /admin/logs/delete  → 발송내역 삭제
 // =============================================================
 
 require('dotenv').config();
@@ -20,8 +22,6 @@ const messaging = require('./lib/messaging');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// 배포 후 도메인 (예: https://ark.up.railway.app, 끝에 / 없이)
 const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-me';
 
@@ -44,9 +44,18 @@ function certificateUrl(req, id) {
 }
 
 app.get('/healthz', (req, res) => res.send('ok'));
-app.get('/', (req, res) => res.redirect('/admin'));
 
-// 고객용 보증서 페이지
+// 손님 공개 조회 페이지
+app.get('/', (req, res) => res.render('lookup', { error: null }));
+
+// 고유번호 입력 → 보증서로 이동
+app.post('/find', (req, res) => {
+  const id = (req.body.id || '').trim();
+  if (!id) return res.render('lookup', { error: '고유번호를 입력해 주세요.' });
+  res.redirect('/certificate/' + encodeURIComponent(id));
+});
+
+// 보증서 페이지
 app.get('/certificate/:id', async (req, res) => {
   try {
     const plant = await sheets.findById(req.params.id);
@@ -80,38 +89,39 @@ app.post('/admin/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/admin'));
 });
 
-// 올해 기준 다음 고유번호 추천 (예: HW-2026-0007)
-async function suggestNextId() {
-  const year = new Date().getFullYear();
-  const prefix = 'HW-' + year + '-';
+// 다음 RG 일련번호 추천 (예: 기존 RG0762 -> RG0763)
+async function suggestNextSerial() {
   let max = 0;
   try {
     const rows = await sheets.getAllRows();
     rows.forEach((r) => {
-      const id = (r['고유번호'] || '').trim();
-      if (id.indexOf(prefix) === 0) {
-        const n = parseInt(id.slice(prefix.length), 10);
+      const m = (r['고유번호'] || '').trim().match(/RG0*(\d+)\s*$/i);
+      if (m) {
+        const n = parseInt(m[1], 10);
         if (!isNaN(n) && n > max) max = n;
       }
     });
   } catch (e) {
-    console.warn('번호 추천 중 경고:', e.message);
+    console.warn('번호 추천 경고:', e.message);
   }
-  return prefix + String(max + 1).padStart(4, '0');
+  return 'RG' + String(max + 1).padStart(4, '0');
 }
 
 // 개체 등록 폼
 app.get('/admin/new', requireLogin, async (req, res) => {
-  const suggestedId = await suggestNextId();
-  res.render('register', { error: null, result: null, form: { 고유번호: suggestedId }, suggestedId });
+  const nextSerial = await suggestNextSerial();
+  res.render('register', { error: null, result: null, form: {}, nextSerial });
 });
 
-// 개체 등록 처리 (시트에 새 행 추가)
+// 개체 등록 처리
 app.post('/admin/new', requireLogin, async (req, res) => {
   const b = req.body;
   const form = {
     고유번호: (b['고유번호'] || '').trim(),
     품종명: (b['품종명'] || '').trim(),
+    영문명: (b['영문명'] || '').trim(),
+    등급: (b['등급'] || '').trim() || '로얄골드',
+    종: (b['종'] || '').trim(),
     육종가: (b['육종가'] || '').trim() || '지양하월시아',
     육종연도: (b['육종연도'] || '').trim(),
     모본: (b['모본'] || '').trim(),
@@ -133,16 +143,16 @@ app.post('/admin/new', requireLogin, async (req, res) => {
     res.render('register', {
       error: null,
       form: {},
-      suggestedId: await suggestNextId(),
+      nextSerial: await suggestNextSerial(),
       result: { 고유번호: form['고유번호'], 품종명: form['품종명'], url },
     });
   } catch (err) {
     console.error(err);
-    res.render('register', { error: err.message, form, result: null, suggestedId: form['고유번호'] });
+    res.render('register', { error: err.message, form, result: null, nextSerial: form['고유번호'] });
   }
 });
 
-// 보증서 발송 처리
+// 보증서 발송
 app.post('/admin/send', requireLogin, async (req, res) => {
   const form = {
     id: (req.body.id || '').trim(),
@@ -154,20 +164,33 @@ app.post('/admin/send', requireLogin, async (req, res) => {
     if (!form.phone) throw new Error('고객 휴대폰 번호를 입력하세요.');
     const plant = await sheets.findById(form.id);
     if (!plant) throw new Error('고유번호 "' + form.id + '" 에 해당하는 개체를 시트에서 찾지 못했습니다.');
+
     const today = new Date().toISOString().slice(0, 10);
     const updates = { 발급일: today };
     if (form.name) updates['소유자'] = form.name;
     try {
       await sheets.updateRow(plant._rowNumber, updates);
     } catch (e) {
-      console.warn('시트 업데이트 경고(발송은 계속 진행):', e.message);
+      console.warn('시트 업데이트 경고:', e.message);
     }
+
     const url = certificateUrl(req, form.id);
-    const sendResult = await messaging.sendCertificate({
-      to: form.phone,
-      name: form.name || plant['소유자'] || '',
-      url,
-    });
+    const sendResult = await messaging.sendCertificate({ to: form.phone, name: form.name || plant['소유자'] || '', url });
+
+    // 발송 내역 기록
+    try {
+      await sheets.appendLog({
+        일시: nowString(),
+        고유번호: form.id,
+        품종명: plant['품종명'] || '',
+        전화번호: form.phone,
+        채널: sendResult.channel,
+        상태: '성공',
+      });
+    } catch (e) {
+      console.warn('발송내역 기록 경고:', e.message);
+    }
+
     res.render('admin', {
       error: null,
       form: {},
@@ -178,6 +201,58 @@ app.post('/admin/send', requireLogin, async (req, res) => {
     res.render('admin', { error: err.message, form, result: null });
   }
 });
+
+// 발송내역 보기
+app.get('/admin/logs', requireLogin, async (req, res) => {
+  try {
+    const logs = await sheets.getLogs();
+    res.render('logs', { logs, error: null, notice: req.query.msg || null });
+  } catch (err) {
+    console.error(err);
+    res.render('logs', { logs: [], error: err.message, notice: null });
+  }
+});
+
+// 발송내역 수동 추가
+app.post('/admin/logs/add', requireLogin, async (req, res) => {
+  try {
+    await sheets.appendLog({
+      일시: (req.body['일시'] || '').trim() || nowString(),
+      고유번호: (req.body['고유번호'] || '').trim(),
+      품종명: (req.body['품종명'] || '').trim(),
+      전화번호: (req.body['전화번호'] || '').trim(),
+      채널: (req.body['채널'] || '').trim() || '수동',
+      상태: (req.body['상태'] || '').trim() || '성공',
+    });
+    res.redirect('/admin/logs?msg=' + encodeURIComponent('내역을 추가했습니다.'));
+  } catch (err) {
+    console.error(err);
+    res.render('logs', { logs: await safeLogs(), error: err.message, notice: null });
+  }
+});
+
+// 발송내역 삭제
+app.post('/admin/logs/delete', requireLogin, async (req, res) => {
+  try {
+    const rowNumber = parseInt(req.body.rowNumber, 10);
+    if (!rowNumber || rowNumber < 2) throw new Error('삭제할 행 번호가 올바르지 않습니다.');
+    await sheets.deleteLogRow(rowNumber);
+    res.redirect('/admin/logs?msg=' + encodeURIComponent('내역을 삭제했습니다.'));
+  } catch (err) {
+    console.error(err);
+    res.render('logs', { logs: await safeLogs(), error: err.message, notice: null });
+  }
+});
+
+async function safeLogs() {
+  try { return await sheets.getLogs(); } catch (e) { return []; }
+}
+
+function nowString() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
 
 app.listen(PORT, () => {
   console.log('✅ 방주 보증서 서버가 실행되었습니다. 포트: ' + PORT);

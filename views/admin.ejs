@@ -36,6 +36,7 @@
       <div class="nav">
         <a href="/admin/new">개체 등록</a>
         <a href="/admin" class="active">보증서 발송</a>
+        <a href="/admin/logs">발송 내역</a>
         <form method="POST" action="/admin/logout" style="display:inline"><button class="logout" type="submit">로그아웃</button></form>
       </div>
     </div>
@@ -44,9 +45,7 @@
       <h1>보증서 발송</h1>
       <div class="sub">제품(고유)번호와 고객 휴대폰 번호를 입력하면, 보증서 링크가 자동으로 발송됩니다.</div>
 
-      <% if (error) { %>
-        <div class="alert err">⚠️ <%= error %></div>
-      <% } %>
+      <% if (error) { %><div class="alert err">⚠️ <%= error %></div><% } %>
 
       <% if (result) { %>
         <div class="alert ok">
@@ -59,7 +58,7 @@
 
       <form method="POST" action="/admin/send">
         <label>제품(고유)번호 *</label>
-        <input name="id" placeholder="예: HW-2026-0001" value="<%= form.id || '' %>" required />
+        <input name="id" placeholder="예: JY-PYG-JY001-26-RG0761" value="<%= form.id || '' %>" required />
         <div class="hint">구글 시트의 '고유번호' 열과 일치해야 합니다.</div>
 
         <label>고객 이름 (선택)</label>
