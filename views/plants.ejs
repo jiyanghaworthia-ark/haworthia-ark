@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>등록 내역 · 관리자 | ARK PROJECT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#1A3620; --gold:#D4AF37; --gold-soft:#E8D9A0; --paper:#FBF8F0; --line:rgba(212,175,55,0.22); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:linear-gradient(160deg,#1A3620,#0E1F12); color:var(--paper); min-height:100vh; padding:26px 14px 60px; }
+    .wrap { max-width:980px; margin:0 auto; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
+    .logo { font-family:'Playfair Display',serif; color:var(--gold); letter-spacing:3px; font-size:15px; }
+    .nav a, .logout { color:var(--gold-soft); font-size:12px; text-decoration:none; border:1px solid rgba(212,175,55,0.4); padding:6px 12px; border-radius:6px; background:none; cursor:pointer; margin-left:6px; }
+    .nav a.active { background:var(--gold); color:#10220f; border-color:var(--gold); }
+    .alert { padding:12px 15px; border-radius:8px; font-size:14px; margin-bottom:16px; }
+    .err { background:rgba(180,40,40,0.25); border:1px solid rgba(220,80,80,0.5); color:#ffd9d9; }
+    .ok { background:rgba(40,120,60,0.25); border:1px solid rgba(120,200,140,0.5); color:#d6ffe0; }
+    .bar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+    .btn { font-size:13px; padding:9px 14px; border-radius:8px; text-decoration:none; cursor:pointer; border:1px solid rgba(212,175,55,0.5); background:rgba(212,175,55,0.14); color:var(--gold-soft); }
+    .btn.gold { background:linear-gradient(180deg,#E6C75A,#D4AF37); color:#10220f; border:none; font-weight:700; }
+    .panel { background:rgba(0,0,0,0.22); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .ph { background:rgba(212,175,55,0.10); padding:13px 18px; border-bottom:1px solid var(--line); font-size:14px; color:#fff; }
+    .scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; min-width:760px; }
+    th, td { padding:9px 11px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th { color:var(--gold-soft); font-weight:400; font-size:12px; background:rgba(255,255,255,0.02); }
+    td { color:#fff; }
+    td a { color:var(--gold); text-decoration:none; }
+    .empty { padding:28px; text-align:center; color:var(--gold-soft); opacity:0.7; font-size:13px; }
+    .badge { font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(212,175,55,0.2); color:var(--gold-soft); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="logo">ARK PROJECT · 관리자</div>
+      <div class="nav">
+        <a href="/admin/new">개체 등록</a>
+        <a href="/admin/plants" class="active">등록 내역</a>
+        <a href="/admin">보증서 발송</a>
+        <a href="/admin/logs">발송 내역</a>
+        <form method="POST" action="/admin/logout" style="display:inline"><button class="logout" type="submit">로그아웃</button></form>
+      </div>
+    </div>
+
+    <% if (error) { %><div class="alert err">⚠️ <%= error %></div><% } %>
+    <% if (notice) { %><div class="alert ok">✅ <%= notice %></div><% } %>
+
+    <div class="bar">
+      <a class="btn" href="/admin/plants.csv">⬇ 백업 다운로드 (CSV)</a>
+      <input type="file" id="file" accept=".csv" style="display:none" onchange="upload()" />
+      <button class="btn" type="button" onclick="document.getElementById('file').click()">⬆ 백업 업로드 (CSV)</button>
+      <a class="btn gold" href="/admin/new">+ 새 개체 등록</a>
+    </div>
+
+    <div class="panel">
+      <div class="ph">등록된 개체 (<%= plants.length %>건) · 최신순</div>
+      <% if (plants.length === 0) { %>
+        <div class="empty">아직 등록된 개체가 없습니다.</div>
+      <% } else { %>
+        <div class="scroll">
+          <table>
+            <tr><th>고유번호</th><th>등급</th><th>품종명</th><th>영문명</th><th>종</th><th>자구</th><th>소유자</th><th>발급일</th><th>보증서</th></tr>
+            <% plants.forEach(function(p){ %>
+            <tr>
+              <td><%= p['고유번호']||'' %></td>
+              <td><span class="badge"><%= p['등급']||'' %></span></td>
+              <td><%= p['품종명']||'' %></td>
+              <td><%= p['영문명']||'' %></td>
+              <td><%= p['종']||'' %></td>
+              <td><%= (p['자구번식묘']||'')==='예' ? '○' : '' %></td>
+              <td><%= p['소유자']||'' %></td>
+              <td><%= p['발급일']||'' %></td>
+              <td><a href="/certificate/<%= encodeURIComponent(p['고유번호']||'') %>" target="_blank">보기</a></td>
+            </tr>
+            <% }); %>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <form id="importForm" method="POST" action="/admin/plants/import" style="display:none">
+    <input type="hidden" name="csv" id="csvData" />
+  </form>
+  <script>
+    function upload(){
+      var f=document.getElementById('file').files[0];
+      if(!f) return;
+      var r=new FileReader();
+      r.onload=function(){ document.getElementById('csvData').value=r.result; document.getElementById('importForm').submit(); };
+      r.readAsText(f, 'utf-8');
+    }
+  </script>
+</body>
+</html>

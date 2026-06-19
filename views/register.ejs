@@ -10,7 +10,7 @@
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'Noto Sans KR',sans-serif; background:linear-gradient(160deg,#1A3620,#0E1F12); color:var(--paper); min-height:100vh; padding:26px 14px 60px; }
     .wrap { max-width:680px; margin:0 auto; }
-    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
     .logo { font-family:'Playfair Display',serif; color:var(--gold); letter-spacing:3px; font-size:15px; }
     .nav a, .logout { color:var(--gold-soft); font-size:12px; text-decoration:none; border:1px solid rgba(212,175,55,0.4); padding:6px 12px; border-radius:6px; background:none; cursor:pointer; margin-left:6px; }
     .nav a.active { background:var(--gold); color:#10220f; border-color:var(--gold); }
@@ -29,9 +29,14 @@
     select option { color:#000; }
     input:focus, textarea:focus, select:focus { outline:none; border-color:var(--gold); }
     textarea { resize:vertical; min-height:78px; line-height:1.6; }
-    .hint { font-size:11px; color:var(--gold-soft); opacity:0.6; margin-top:5px; }
+    .hint { font-size:11px; color:var(--gold-soft); opacity:0.65; margin-top:5px; }
     .pair { display:flex; gap:10px; }
     .pair > div { flex:1; }
+    .check { display:flex; align-items:center; gap:9px; font-size:14px; color:#fff; cursor:pointer; }
+    .check input { width:18px; height:18px; accent-color:#D4AF37; }
+    .quick { padding:16px 18px; }
+    .quick textarea { min-height:96px; }
+    .quick .qbtn { margin-top:10px; padding:10px 18px; border:none; border-radius:8px; background:rgba(212,175,55,0.18); color:var(--gold-soft); border:1px solid rgba(212,175,55,0.5); font-size:13px; cursor:pointer; }
     .actions { margin-top:20px; }
     button.submit { width:100%; padding:15px; border:none; border-radius:9px; background:linear-gradient(180deg,#E6C75A,#D4AF37); color:#10220f; font-size:16px; font-weight:700; letter-spacing:1px; cursor:pointer; }
     .alert { padding:13px 15px; border-radius:8px; font-size:14px; margin-bottom:16px; }
@@ -47,6 +52,7 @@
       <div class="logo">ARK PROJECT · BY JIYANG</div>
       <div class="nav">
         <a href="/admin/new" class="active">개체 등록</a>
+        <a href="/admin/plants">등록 내역</a>
         <a href="/admin">보증서 발송</a>
         <a href="/admin/logs">발송 내역</a>
         <form method="POST" action="/admin/logout" style="display:inline"><button class="logout" type="submit">로그아웃</button></form>
@@ -59,12 +65,22 @@
         ✅ <strong><%= result.고유번호 %></strong> · <%= result.품종명 %> 등록 완료!
         <div class="btns">
           <a href="<%= result.url %>" target="_blank">보증서 미리보기</a>
-          <a href="/admin">이 번호로 고객에게 발송하기 →</a>
+          <a href="/admin">이 번호로 발송하기 →</a>
+          <a href="/admin/plants">등록 내역 보기</a>
         </div>
       </div>
     <% } %>
 
     <form method="POST" action="/admin/new">
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="section-head"><span class="dot"></span><h2>빠른 입력 (붙여넣기)</h2></div>
+        <div class="quick">
+          <textarea id="paste" placeholder="엑셀/메모에서 4줄을 그대로 붙여넣으세요. 순서:&#10;1줄 고유번호 → 2줄 종(속명) → 3줄 영문명 → 4줄 품종명(한글)&#10;&#10;예)&#10;JY-SPRX-特715-26-RG760&#10;H.springboks hyb&#10;'Ma seong'&#10;'마성(魔星)'"></textarea>
+          <div class="hint">붙여넣고 "자동 채우기"를 누르면 아래 고유번호·종·영문명·품종명 칸이 자동으로 입력됩니다. (작은따옴표는 자동 제거)</div>
+          <button type="button" class="qbtn" onclick="autoFill()">↓ 자동 채우기</button>
+        </div>
+      </div>
+
       <div class="panel" style="margin-bottom:18px;">
         <div class="section-head"><span class="dot"></span><h2>기본 정보</h2><span class="req-note">★ 필수 입력</span></div>
         <table class="form">
@@ -72,56 +88,43 @@
             <th><span class="star">★</span>고유번호 (제품번호)</th>
             <td>
               <input type="text" name="고유번호" value="<%= form['고유번호'] || '' %>" placeholder="예: JY-PYG-JY001-26-RG0761" required />
-              <div class="hint">형식 예: <b>JY-[계통]-[개체]-[연도]-RG[일련]</b> · 중복 불가 · 다음 RG 일련번호 추천: <b><%= nextSerial %></b></div>
+              <div class="hint">형식 예: JY-[계통]-[개체]-[연도]-RG[일련] · 중복 불가 · 다음 RG 추천: <b><%= nextSerial %></b></div>
             </td>
           </tr>
           <tr>
             <th>등급</th>
             <td>
-              <%
-                var grades = ['로얄골드','골드','레드','그린'];
-                var sel = (form['등급'] || '로얄골드');
-              %>
+              <% var grades=['로얄골드','골드','레드','그린']; var sel=(form['등급']||'로얄골드'); %>
               <select name="등급">
-                <% grades.forEach(function(gOpt){ %>
-                  <option value="<%= gOpt %>" <%= sel === gOpt ? 'selected' : '' %>><%= gOpt %></option>
-                <% }); %>
+                <% grades.forEach(function(g){ %><option value="<%= g %>" <%= sel===g?'selected':'' %>><%= g %></option><% }); %>
               </select>
-              <div class="hint">보증서를 발급하는 등급(보통 로얄골드)을 선택하세요.</div>
             </td>
           </tr>
+          <tr><th><span class="star">★</span>품종명 (한글)</th><td><input type="text" name="품종명" value="<%= form['품종명'] || '' %>" placeholder="예: 마성(魔星)" required /></td></tr>
+          <tr><th>영문명</th><td><input type="text" name="영문명" value="<%= form['영문명'] || '' %>" placeholder="예: Ma seong" /></td></tr>
+          <tr><th>종 / 속명</th><td><input type="text" name="종" value="<%= form['종'] || '' %>" placeholder="예: H.springboks hyb" /></td></tr>
           <tr>
-            <th><span class="star">★</span>품종명 (한글)</th>
-            <td><input type="text" name="품종명" value="<%= form['품종명'] || '' %>" placeholder="예: 마성(魔星)" required /></td>
+            <th>번식 구분</th>
+            <td>
+              <label class="check"><input type="checkbox" name="자구번식묘" value="예" <%= form['자구번식묘']==='예'?'checked':'' %> /> 자구 번식묘</label>
+              <div class="hint">자구(새끼묘)로 번식한 개체이면 체크하세요.</div>
+            </td>
           </tr>
-          <tr>
-            <th>영문명</th>
-            <td><input type="text" name="영문명" value="<%= form['영문명'] || '' %>" placeholder="예: Ma seong" /></td>
-          </tr>
-          <tr>
-            <th>상태</th>
-            <td><input type="text" name="상태" value="<%= form['상태'] || '정품 인증' %>" placeholder="정품 인증" /></td>
-          </tr>
+          <tr><th>상태</th><td><input type="text" name="상태" value="<%= form['상태'] || '정품 인증' %>" placeholder="정품 인증" /></td></tr>
         </table>
       </div>
 
       <div class="panel" style="margin-bottom:18px;">
-        <div class="section-head"><span class="dot"></span><h2>종 · 육종 정보</h2></div>
+        <div class="section-head"><span class="dot"></span><h2>육종 정보</h2></div>
         <table class="form">
-          <tr>
-            <th>종 / 계통</th>
-            <td><input type="text" name="종" value="<%= form['종'] || '' %>" placeholder="예: H.springboks hyb" /></td>
-          </tr>
           <tr><th>육종가</th><td><input type="text" name="육종가" value="<%= form['육종가'] || '지양하월시아' %>" /></td></tr>
           <tr><th>육종 연도</th><td><input type="text" name="육종연도" value="<%= form['육종연도'] || '' %>" placeholder="예: 2026" /></td></tr>
           <tr>
             <th>모본 · 부본</th>
-            <td>
-              <div class="pair">
-                <div><input type="text" name="모본" value="<%= form['모본'] || '' %>" placeholder="모본 (씨받이)" /></div>
-                <div><input type="text" name="부본" value="<%= form['부본'] || '' %>" placeholder="부본 (꽃가루)" /></div>
-              </div>
-            </td>
+            <td><div class="pair">
+              <div><input type="text" name="모본" value="<%= form['모본'] || '' %>" placeholder="모본 (씨받이)" /></div>
+              <div><input type="text" name="부본" value="<%= form['부본'] || '' %>" placeholder="부본 (꽃가루)" /></div>
+            </div></td>
           </tr>
           <tr><th>DNA 마커</th><td><input type="text" name="DNA마커" value="<%= form['DNA마커'] || '' %>" placeholder="예: 등록완료 JY-DNA-0001" /></td></tr>
         </table>
@@ -130,29 +133,20 @@
       <div class="panel" style="margin-bottom:18px;">
         <div class="section-head"><span class="dot"></span><h2>사진 · 인증</h2></div>
         <table class="form">
-          <tr>
-            <th>사진 URL</th>
-            <td>
-              <input type="text" name="사진URL" value="<%= form['사진URL'] || '' %>" placeholder="https://.../plant.jpg" />
-              <div class="hint">.jpg / .png 로 끝나는 이미지 주소 권장. 비우면 '사진 준비 중'으로 표시됩니다.</div>
-            </td>
-          </tr>
-          <tr>
-            <th>관리자 메시지</th>
-            <td><textarea name="관리자메시지" placeholder="비우면 기본 환영 문구가 들어갑니다."><%= form['관리자메시지'] || '' %></textarea></td>
-          </tr>
+          <tr><th>사진 URL</th><td><input type="text" name="사진URL" value="<%= form['사진URL'] || '' %>" placeholder="https://.../plant.jpg" /><div class="hint">.jpg / .png 권장. 비우면 '사진 준비 중' 표시.</div></td></tr>
+          <tr><th>관리자 메시지</th><td><textarea name="관리자메시지" placeholder="비우면 기본 환영 문구"><%= form['관리자메시지'] || '' %></textarea></td></tr>
         </table>
       </div>
 
       <div class="panel">
         <div class="section-head"><span class="dot"></span><h2>소유 정보</h2></div>
         <table class="form">
-          <tr><th>현 소유자</th><td><input type="text" name="소유자" value="<%= form['소유자'] || '' %>" placeholder="예: 홍길동 (발송 시 자동 기록도 됩니다)" /></td></tr>
+          <tr><th>현 소유자</th><td><input type="text" name="소유자" value="<%= form['소유자'] || '' %>" placeholder="예: 홍길동 (발송 시 자동 누적됩니다)" /></td></tr>
           <tr>
             <th>소유자 이전 기록</th>
             <td>
-              <textarea name="소유이력" placeholder="한 줄에 하나씩. 형식: 날짜 | 내용&#10;예)&#10;2026 | 최초 육종 (지양하월시아)&#10;2026-06 | 홍길동 분양"><%= form['소유이력'] || '' %></textarea>
-              <div class="hint">한 줄이 보증서의 타임라인 한 칸이 됩니다. "날짜 | 내용" 형식 권장.</div>
+              <textarea name="소유이력" placeholder="한 줄에 하나씩. 형식: 날짜 | 내용"><%= form['소유이력'] || '' %></textarea>
+              <div class="hint">보증서 발송으로 소유권이 바뀔 때마다 여기에 자동으로 한 줄씩 누적됩니다.</div>
             </td>
           </tr>
         </table>
@@ -161,5 +155,21 @@
       <div class="actions"><button class="submit" type="submit">개체 등록하기</button></div>
     </form>
   </div>
+
+  <script>
+    function stripQuotes(s){ return (s||'').trim().replace(/^[‘’'"\s]+|[‘’'"\s]+$/g,'').trim(); }
+    function setVal(name,val){ var el=document.getElementsByName(name)[0]; if(el && val) el.value=val; }
+    function autoFill(){
+      var raw=(document.getElementById('paste').value||'').trim();
+      if(!raw){ return; }
+      var parts=raw.split(/\r?\n/).map(function(s){return s.trim();}).filter(function(s){return s;});
+      if(parts.length<2){ parts=raw.split(/\t/).map(function(s){return s.trim();}).filter(function(s){return s;}); }
+      // 순서: 고유번호, 종(속명), 영문명, 품종명
+      if(parts[0]) setVal('고유번호', stripQuotes(parts[0]));
+      if(parts[1]) setVal('종', stripQuotes(parts[1]));
+      if(parts[2]) setVal('영문명', stripQuotes(parts[2]));
+      if(parts[3]) setVal('품종명', stripQuotes(parts[3]));
+    }
+  </script>
 </body>
 </html>
